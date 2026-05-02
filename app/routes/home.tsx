@@ -5,7 +5,7 @@ import {ResumeCard} from "~/components/ResumeCard";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "AI Resume Feedback" },
+    { title: "Resumind" },
     { name: "description", content: "Smart feedback for your dream job" },
   ];
 }
