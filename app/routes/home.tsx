@@ -2,6 +2,9 @@ import type { Route } from "./+types/home";
 import {Navbar} from "~/components/Navbar";
 import {resumes} from "../../constants";
 import {ResumeCard} from "~/components/ResumeCard";
+import {usePuterStore} from "~/lib/puter";
+import {useNavigate} from "react-router";
+import {useEffect} from "react";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -11,8 +14,17 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
-  return <main className="bg-[url('/images/bg-main.svg')] bg-cover">
-    <Navbar/>
+  const {auth} = usePuterStore();
+  const isAuthenticated = auth.isAuthenticated;
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if(!isAuthenticated) navigate("/auth?next=/")
+  }, [isAuthenticated]);
+
+  return      (
+      <main className="bg-[url('/images/bg-main.svg')] bg-cover min-h-screen flex flex-col items-center justify-center">
+      <Navbar/>
     <section className={"main-section"}>
       <div className="page-heading py-10">
       <h1 className={'capitalize'}>Track your Applications & resume ratings</h1>
@@ -26,5 +38,6 @@ export default function Home() {
         })}
       </div> }
     </section>
-  </main>;
+  </main>
+  );
 }
