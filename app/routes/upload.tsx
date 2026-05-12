@@ -1,20 +1,93 @@
 import {Navbar} from "~/components/Navbar";
 import {useState} from "react";
 import FileUploader from "~/components/FileUploader";
+import {usePuterStore} from "~/lib/puter";
+import {useNavigate} from "react-router";
+import {convertPdfToImage} from "~/lib/pdftoimage";
+import {generatedUUID} from "~/utils";
+import {AIResponseFormat, prepareInstructions} from "../../constants";
 
 const Upload = () => {
   const [isProcessing, setIsProcessing] = useState(false)
-  const [statusText, setStatusText] = useState(false)
-    const [file, setFile] = useState<File | null>(null)
+  const [statusText, setStatusText] = useState("")
+    const [file, setFile] = useState<File | any>(null)
+    const {auth, isLoading, fs, ai, kv} = usePuterStore()
+    const navigate = useNavigate()
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-  }
 
-  const handleFileSelect = (file: File | null) => {
-      console.log("gggg")
+    const handleFileSelect = (file: File | null) => {
         setFile(file)
+    }
+
+    const handleAnalyze = async ({companyName, jobTitle, jobDescription}: { companyName: string, jobTitle: string, jobDescription: string, file: File}) => {
+      setIsProcessing(true)
+        setStatusText("Uploading the File...")
+        const uploadedFile = await fs.upload([file])
+
+        if(!uploadedFile) {
+          setIsProcessing(false)
+          setStatusText("ERR: Failed to upload the file")
+          return
+        }
+        setStatusText("Converting to Image...")
+        const imageFile = await convertPdfToImage(file)
+      if(!imageFile.file) setStatusText("ERR: Failed to convert the file to image")
+      setStatusText("Uploading the Image...")
+      const uploadedImage = await fs.upload([imageFile.file])
+      if(!uploadedImage) {
+        setIsProcessing(false)
+        setStatusText("ERR: Failed to upload image")
+        return
+      }
+
+      setStatusText("ERR: Failed to upload image")
+
+      const uuid = generatedUUID()
+
+      const data = {
+        id: uuid,
+        resumePath: uploadedFile.path,
+        imagePath: uploadedImage.path,
+        companyName,
+        jobTitle,
+        jobDescription,
+        feedback: {}
+      }
+
+      await  kv.set(`resume:${uuid}`, JSON.stringify(data))
+
+      setStatusText("Analyzing the Resume...")
+
+      const feedback = await ai.feedback(uploadedFile.path, prepareInstructions({jobTitle, jobDescription}))
+      if (!feedback) {
+        setIsProcessing(false)
+        setStatusText("ERR: Failed to analyze the resume")
+        return
+      }
+      const feedbackText = typeof feedback.message.content === 'string'  ? feedback.message.content : feedback.message.content[0].text
+      setStatusText("Saving the Feedback...")
+      data.feedback = JSON.parse(feedbackText)
+      await kv.set(`feedback:${uuid}`, JSON.stringify(feedback))
+      setStatusText("Analysis Complete! redirecting...")
+      setIsProcessing(false)
+      // navigate(`/feedback/${uuid}`)
+      console.log(data)
+
   }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+      const form = e.currentTarget.closest("form")
+      if(!form) return
+      const formData = new FormData(form)
+      const companyName = formData.get("company-name") as string
+      const jobTitle = formData.get("job-title") as string
+      const jobDescription = formData.get("job-description") as string
+      if(!file) return
+      await handleAnalyze({companyName, jobTitle, jobDescription, file})
+  }
+
+
   return (
       <main className="bg-[url('/images/bg-main.svg')] bg-cover">
         <Navbar/>
@@ -36,15 +109,15 @@ const Upload = () => {
                   <form id={"resume-upload"} onSubmit={handleSubmit} className={"flex flex-col gap-4 mt-8"}>
                     <div className={"form-div"}>
                       <label htmlFor={"company-name"} className={"form-label"}>Company Name</label>
-                      <input type={"text"} id={"company-name"} className={"form-input"} placeholder={"Enter Company Name"}/>
+                      <input type={"text"} name={"company-name"} id={"company-name"} className={"form-input"} placeholder={"Enter Company Name"}/>
                     </div>
                     <div className={"form-div"}>
                       <label htmlFor={"job-title"} className={"form-label"}>Job Title</label>
-                      <input type={"text"} id={"job-title"} className={"form-input"} placeholder={"Enter Job Title"}/>
+                      <input type={"text"} id={"job-title"} name={"job-title"} className={"form-input"} placeholder={"Enter Job Title"}/>
                     </div>
                     <div className={"form-div"}>
                       <label htmlFor={"job-description"} className={"form-label"}>Job Description</label>
-                      <textarea rows={5} id={"job-description"} className={"form-input"} placeholder={"Enter Job Description"}/>
+                      <textarea rows={5} id={"job-description"} name={"job-description"} className={"form-input"} placeholder={"Enter Job Description"}/>
                     </div>
                     <div className={"form-div"}>
                       <label htmlFor={"uploader"} className={"form-label"}>Upload Resume</label>
