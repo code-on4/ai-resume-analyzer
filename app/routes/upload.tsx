@@ -19,11 +19,10 @@ const Upload = () => {
         setFile(file)
     }
 
-    const handleAnalyze = async ({companyName, jobTitle, jobDescription}: { companyName: string, jobTitle: string, jobDescription: string, file: File}) => {
+    const handleAnalyze = async ({companyName, jobTitle, jobDescription, file}: { companyName: string, jobTitle: string, jobDescription: string, file: File}) => {
       setIsProcessing(true)
         setStatusText("Uploading the File...")
         const uploadedFile = await fs.upload([file])
-
         if(!uploadedFile) {
           setIsProcessing(false)
           setStatusText("ERR: Failed to upload the file")
@@ -33,6 +32,11 @@ const Upload = () => {
         const imageFile = await convertPdfToImage(file)
       if(!imageFile.file) setStatusText("ERR: Failed to convert the file to image")
       setStatusText("Uploading the Image...")
+      console.log(imageFile)
+      if (!imageFile.file) {
+        setIsProcessing(false)
+        throw new Error("No file selected")
+      }
       const uploadedImage = await fs.upload([imageFile.file])
       if(!uploadedImage) {
         setIsProcessing(false)
@@ -85,6 +89,7 @@ const Upload = () => {
       const jobDescription = formData.get("job-description") as string
       if(!file) return
       await handleAnalyze({companyName, jobTitle, jobDescription, file})
+
   }
 
 
