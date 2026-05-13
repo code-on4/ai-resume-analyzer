@@ -74,10 +74,11 @@ const Upload = () => {
       await kv.set(`feedback:${uuid}`, JSON.stringify(feedback))
       setStatusText("Analysis Complete! redirecting...")
       setIsProcessing(false)
-      // navigate(`/feedback/${uuid}`)
       console.log(data)
+      navigate(`/resume/${uuid}`)
 
-  }
+
+    }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
