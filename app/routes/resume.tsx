@@ -1,6 +1,6 @@
-import {Link, useParams} from "react-router";
+import {Link, useNavigate, useParams} from "react-router";
 import type {Route} from "../../.react-router/types/app/routes/+types/home";
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 import {usePuterStore} from "~/lib/puter";
 
 export function meta({}: Route.MetaArgs) {
@@ -12,7 +12,14 @@ export function meta({}: Route.MetaArgs) {
 
 const Resume = () => {
     const {auth, isLoading, fs, kv} = usePuterStore()
+    const isAuthenticated = auth.isAuthenticated;
     const {id} = useParams();
+    const [imageUrl, setImageUrl] = useState("")
+    const [resumeUrl, setResumeUrl] = useState("")
+    const [feedback, setFeedback] = useState("")
+    const navigate = useNavigate()
+
+
 
     useEffect(() => {
         const loadResume = async () => {
@@ -23,9 +30,22 @@ const Resume = () => {
             if(!resumeBlob) return;
             const pdfBlob = new Blob([resumeBlob], {type: "application/pdf"})
             const resumeUrl = URL.createObjectURL(pdfBlob)
-            setImageUrl(resumeUrl)
+            setResumeUrl(resumeUrl)
+
+            const imageBlob = await fs.read(data.imagePath)
+            if(!imageBlob) return;
+            const imageUrl = URL.createObjectURL(imageBlob)
+            setImageUrl(imageUrl)
+
+            setFeedback(data.feedback)
         }
+
+        loadResume()
     }, [])
+
+    useEffect(() => {
+        if(!isAuthenticated) navigate(`/auth?next=/resume/${id}`)
+    }, [isAuthenticated]);
 
     return (
         // <div>Resume {id}</div>
@@ -37,12 +57,27 @@ const Resume = () => {
                 </Link>
             </nav>
             <div className={"flex flex-row w-full max-lg:flex-col-reverse"}>
-                <section className={"feedback-section"}>
+                <section className={"feedback-section bg-[url('/images/bg-small.svg')] bg-cover h-[100vh] sticky top-0 items-center justify-center"}>
                     {imageUrl && resumeUrl && (
                         <div className={"animate-in fade-in duration-1000 gradient-border max-sm:m-0 h-[90%] max-wxl:h-fit w-fit"}>
-
-                           </div>)
+                            <a href={resumeUrl} target={"_blank"}>
+                                <img src={imageUrl} alt={"resume"} className={"w-full h-full object-contain rounded-2xl"}/>
+                            </a>
+                           </div>
+                    )}
+                </section>
+                <section className={"feedback-section bg-white p-8"}>
+                    <div className={"feedback-card"}>
+                        <h2 className={"text-4xl font-bold text-black"}>Resume Review</h2>
+                        {
+                            feedback ? (
+                                <div className={"flex flex-col animate-in fade-in duration-1000 gap-8"}>
+                                    Summary ATS details
+                                </div>
+                            ) : <img src={"/images/resume-scan-2.gif"} alt={"spinner"} className={"w-full"}/>
                         }
+                        <p className={"text-gray-700"}>{feedback}</p>
+                    </div>
                 </section>
             </div>
         </main>
