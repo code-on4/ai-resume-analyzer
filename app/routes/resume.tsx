@@ -2,6 +2,9 @@ import {Link, useNavigate, useParams} from "react-router";
 import type {Route} from "../../.react-router/types/app/routes/+types/home";
 import {useEffect, useState} from "react";
 import {usePuterStore} from "~/lib/puter";
+import Summary from "~/components/Summary";
+import ATS from "~/components/ATS";
+import Details from "~/components/Details";
 
 export function meta({}: Route.MetaArgs) {
     return [
@@ -16,7 +19,7 @@ const Resume = () => {
     const {id} = useParams();
     const [imageUrl, setImageUrl] = useState("")
     const [resumeUrl, setResumeUrl] = useState("")
-    const [feedback, setFeedback] = useState("")
+    const [feedback, setFeedback] = useState<Feedback | null>(null)
     const navigate = useNavigate()
 
 
@@ -44,9 +47,11 @@ const Resume = () => {
     }, [])
 
     useEffect(() => {
-        if(!isAuthenticated) navigate(`/auth?next=/resume/${id}`)
-    }, [isAuthenticated]);
+        if(!isLoading && !isAuthenticated) navigate(`/auth?next=/resume/${id}`)
+    }, [isLoading]);
 
+
+    // resume/2f3dfb08-f908-4227-bebf-cbddc8521b9f
     return (
         // <div>Resume {id}</div>
         <main className={"!pt-0 "}>
@@ -72,11 +77,12 @@ const Resume = () => {
                         {
                             feedback ? (
                                 <div className={"flex flex-col animate-in fade-in duration-1000 gap-8"}>
-                                    Summary ATS details
+                                    <Summary feedback={feedback}/>
+
                                 </div>
                             ) : <img src={"/images/resume-scan-2.gif"} alt={"spinner"} className={"w-full"}/>
                         }
-                        <p className={"text-gray-700"}>{feedback}</p>
+                        {/*<p className={"text-gray-700"}>{feedback}</p>*/}
                     </div>
                 </section>
             </div>
