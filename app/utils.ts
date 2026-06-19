@@ -1,3 +1,6 @@
+import clsx, {type ClassValue} from "clsx";
+import {twMerge} from "tailwind-merge";
+
 export function formatFileSize(bytes: number, decimals = 2): string {
     if (bytes === 0) return '0 Bytes';
 
@@ -13,3 +16,8 @@ export function formatFileSize(bytes: number, decimals = 2): string {
 export const generatedUUID = () => {
     return crypto.randomUUID()
 }
+
+export function cn(...inputs: ClassValue[]){
+    return twMerge(clsx(inputs))
+}
+
