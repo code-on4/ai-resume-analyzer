@@ -42,7 +42,7 @@ declare global {
     }
 }
 
-interface PuterStore {
+export interface PuterStore {
     isLoading: boolean;
     error: string | null;
     puterReady: boolean;
